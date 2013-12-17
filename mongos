@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# mongos - Startup script for mongos
+
+# chkconfig: 35 85 15
+# description: Mongo Router Process for sharding
+# processname: mongos
+# config: /etc/mongos.conf
+# pidfile: /var/run/mongos.pid
+
+. /etc/rc.d/init.d/functions
+
+# mongos will read mongos.conf for configuration settings
+
+CONFIGFILE="/etc/mongos.conf"
+MONGO_BIN=/usr/bin/mongos
+MONGO_USER=mongod
+MONGO_GROUP=mongod
+
+start()
+{
+  ulimit -f unlimited
+  ulimit -t unlimited
+  ulimit -v unlimited
+  ulimit -n 64000
+  ulimit -m unlimited
+  ulimit -u 32000
+  echo -n $"Starting mongos: "
+  daemon --user "$MONGO_USER" $MONGO_BIN -f $CONFIGFILE
+  echo
+  RETVAL=$?
+}
+
+stop()
+{
+  echo -n $"Stopping mongos: "
+  killproc -p "$PIDFILE" -d 300 "$MONGO_BIN"
+  echo
+  RETVAL=$?
+}
+
+restart () {
+  stop
+  start
+}
+
+logroll () {
+  source "$CONFIGFILE"
+  echo "$logpath"
+  if [ ! -f $logpath ]; then
+    echo "log file not found $logpath"
+    exit 1
+  fi
+  timestamp=`date +%Y%m%d`
+  newlogpath=$logpath.$timestamp
+  cp $logpath $newlogpath
+  cat /dev/null > $logpath
+  gzip -f -9 $newlogpath
+}
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  restart)
+    stop
+    start
+    ;;
+  log-roll)
+    logroll
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|log-roll}"
+    RETVAL=1
+esac
+
+exit $RETVAL

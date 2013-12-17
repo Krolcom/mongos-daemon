@@ -45,8 +45,8 @@ restart () {
 }
 
 logroll () {
+  echo -n $"Rotating log..."
   source "$CONFIGFILE"
-  echo "$logpath"
   if [ ! -f $logpath ]; then
     echo "log file not found $logpath"
     exit 1
@@ -56,6 +56,8 @@ logroll () {
   cp $logpath $newlogpath
   cat /dev/null > $logpath
   gzip -f -9 $newlogpath
+  echo -n $"Purging old logs..."
+  find "$logpath.*.gz" -mtime +3 -exec rm {} \;
 }
 
 case "$1" in
